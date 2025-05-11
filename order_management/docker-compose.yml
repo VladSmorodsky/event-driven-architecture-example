@@ -1,0 +1,44 @@
+services:
+  order:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 9001 --reload
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - '9001:9001'
+    healthcheck:
+      test: ping 0.0.0.0 -p 9001 -c 1
+      interval: 60s
+      timeout: 10s
+      retries: 1
+    networks:
+      - rabbitmq-network
+
+  rabbitmq:
+    image: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - rabbitmq-network
+
+  db:
+    image: postgres:17.4
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data: {}
+
+networks:
+  rabbitmq-network:
+    external: true
